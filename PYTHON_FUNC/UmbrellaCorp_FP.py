@@ -14,6 +14,9 @@ import streamlit as st
 from UmbrellaCorp_DBM import DBM
 from UmbrellaCorp_BL import BL
 from UmbrellaCorp_Containers import Personal
+from UmbrellaCorp_Containers import EquipoContencion
+from UmbrellaCorp_Containers import ZonaBrote
+from UmbrellaCorp_Containers import BOW
 
 
 #Creamos el Pool de conexiones a la Base de Datos.
@@ -54,6 +57,7 @@ st.set_page_config(
 if "usuario" not in st.session_state:
     st.session_state.usuario = None #El objeto del ultimo usuario consultado.
     st.session_state.jefe = None #Objeto del ultimo jefe consultado.
+    st.session_state.obj = None #Objeto para saber info antes de un despliegue.
 
 # Barra lateral
 with st.sidebar:
@@ -182,62 +186,134 @@ def selector_jefe():
 
 
 #Un selector dinámico (con información ya existente - selectboxes) para registrar nuevos despliegues.
+#A demas de un buscador interactivo para buscar más información sobre las zonas de brote, las B.O.W's y los equipos de contención.
 def registro_despliegue():
-    with st.container(border=True):
-        st.subheader("Formulario de Despliegues")
+    #Dividimos el espacio en dos columnas.
+    col1, col2 = st.columns([2,1])
 
-        #Declarar un st.form (persistencia).
-        with st.form(key="registro_despliegue"):
-            #Selector de especimen.
-            especimen = st.selectbox(
-                label="B.O.W. - Espécimen",
-                options=logic.obtenerEspecimenes() #Lista de los espécimenes.
-            )
+    #El forms de registro.
+    with col1:
+        with st.container(border=True):
+            st.subheader("Formulario de Despliegues")
 
-            #Selector de región.
-            zona_brote = st.selectbox(
-                label="Zona de Brote",
-                options=logic.obtenerZonasBrote() #Lista de las regiones de brote.
-            )
+            #Declarar un st.form (persistencia).
+            with st.form(key="registro_despliegue"):
+                #Selector de especimen.
+                especimen = st.selectbox(
+                    label="B.O.W. - Espécimen",
+                    options=logic.obtenerEspecimenes() #Lista de los espécimenes.
+                )
 
-            #Selector de equipo de contención.
-            equipo_contencion = st.selectbox(
-                label="Equipo de Contención",
-                options=logic.obtenerEquiposContencion() #Lista de los equipos de contención.
-            )
+                #Selector de región.
+                zona_brote = st.selectbox(
+                    label="Zona de Brote",
+                    options=logic.obtenerZonasBrote() #Lista de las regiones de brote.
+                )
 
-            #Slider de número de especimenes.
-            num_especimenes = st.slider(
-                label= "Cantidad de espécimenes a desplegar",
-                min_value= 1,
-                max_value= 100,
-                value= 1,
-                step= 1,
-                help= "Indicar número de espécimenes para un nuevo despliegue"
-            )
+                #Selector de equipo de contención.
+                equipo_contencion = st.selectbox(
+                    label="Equipo de Contención",
+                    options=logic.obtenerEquiposContencion() #Lista de los equipos de contención.
+                )
+
+                #Slider de número de especimenes.
+                num_especimenes = st.slider(
+                    label= "Cantidad de espécimenes a desplegar",
+                    min_value= 1,
+                    max_value= 100,
+                    value= 1,
+                    step= 1,
+                    help= "Indicar número de espécimenes para un nuevo despliegue"
+                )
+                
+                #Botón de registro.
+                boton_registrar = st.form_submit_button(label="Registrar despliegue")
+
+            #Jalar todos los datos del forms.
+            if boton_registrar:
+                #Separamos los ID's de los nombres.
+                p_especimen = especimen.split("ID: ")
+                p_zona_brote = zona_brote.split("ID: ")
+                p_equipo_contencion = equipo_contencion.split("ID: ")
+
+                #Enviamos el nuevo registro.
+                sys_msg = logic.registrarNuevoDespliegue(
+                    num_especimenes= num_especimenes,
+                    equipo_codigo= p_equipo_contencion[1],
+                    geografico_id= int(p_zona_brote[1]),
+                    empleado_id= st.session_state.usuario.id_empleado,
+                    lote_codigo= p_especimen[1]
+                )
+                if sys_msg == "QUERY SUCCESS":
+                    st.success(sys_msg)
+                else:
+                    st.error(sys_msg)
+
+    #El forms de consulta
+    with col2:
+        with st.container(border=True):
+            st.subheader("Consultar elementos a desplegar")
+
+            #Forms de persistencia
+            with st.form(key="consulta_despliegue"):
+                #Selector de la tabla de origen.
+                tabla = st.selectbox(
+                    label="Registro de origen",
+                    options=["EQUIPO_CONTENCION", "ZONA_BROTE", "BOW"]
+                )
+
+                #Input del ID del elemento.
+                id_elemento = st.text_input(
+                    label="ID Elemento: ",
+                    value="",
+                    placeholder="Ingresa el ID aquí"
+                )
+
+                #Botón de busqueda.
+                boton_buscar = st.form_submit_button(label="Buscar elemento")
+
+            #Jalar todos los datos del forms.
+            if boton_buscar:
+                #'res' es un objeto.
+                if tabla == "EQUIPO_CONTENCION":
+                    st.session_state.obj = logic.obtenerRegistroEquipoContencion(id_elemento) #Instancia EquipoContencion.
+                if tabla == "ZONA_BROTE":
+                    st.session_state.obj = logic.obtenerRegistroZonaBrote(id_elemento) #Instancia ZonaBrote.
+                if tabla == "BOW":
+                    st.session_state.obj = logic.obtenerRegistroBOW(id_elemento) #Instamcia BOW.
+
+                #Validar:
+                if st.session_state.obj is None or st.session_state.obj == []:
+                    st.error(f"El elemento: {id_elemento} de la tabla: {tabla} no existe")
+
+            #Validar antes de imprimir
+            if st.session_state.obj is not None:
+                #Imprimir los objetos.
+                if isinstance(st.session_state.obj, EquipoContencion):
+                    st.markdown(f"**Equipo:** {st.session_state.obj.nombre_equipo}")
+                    st.markdown(f"**Aramamento:** {st.session_state.obj.nombre_armamento}")
+
+                elif isinstance(st.session_state.obj, ZonaBrote):
+                    st.markdown(f"**Zona:** {st.session_state.obj.nombre_zona}")
+                    st.markdown(f"**ALERTA -** {st.session_state.obj.nombre_estado}")
+                    
+                elif isinstance(st.session_state.obj, BOW):
+                    st.markdown(f"**Nombre Clave:** {st.session_state.obj.nombre_clave}")
+                    st.markdown(f"**Fecha Mutación:** {st.session_state.obj.fecha_mutacion}")
+                    st.markdown(f"**Cepa:** {st.session_state.obj.nombre_cepa}")
+                    st.markdown(f"**Tipo:** {st.session_state.obj.tipo}")
+
+                    #Cambian los parametros segun el tipo.
+                    if st.session_state.obj.tipo == "Humanoide":
+                        st.markdown(f"**IQ:** {st.session_state.obj.valor_iq}")
+                        st.markdown(f"**Resistencia:** {st.session_state.obj.resistencia_daño}")
+                    if st.session_state.obj.tipo == "Zoologico":
+                        st.markdown(f"**Agresividad:** {st.session_state.obj.tasa_agresividad}")
+                        st.markdown(f"**Especie Origen:** {st.session_state.obj.nombre_especie}")
+
+                else:
+                    st.error(f"No se reconoce el objeto: {type(st.session_state.obj)}")
             
-            #Botón de registro.
-            boton_registrar = st.form_submit_button(label="Registrar despliegue")
-
-        #Jalar todos los datos del forms.
-        if boton_registrar:
-            #Separamos los ID's de los nombres.
-            p_especimen = especimen.split("ID: ")
-            p_zona_brote = zona_brote.split("ID: ")
-            p_equipo_contencion = equipo_contencion.split("ID: ")
-
-            #Enviamos el nuevo registro.
-            sys_msg = logic.registrarNuevoDespliegue(
-                num_especimenes= num_especimenes,
-                equipo_codigo= p_equipo_contencion[1],
-                geografico_id= int(p_zona_brote[1]),
-                empleado_id= st.session_state.usuario.id_empleado,
-                lote_codigo= p_especimen[1]
-            )
-            if sys_msg == "QUERY SUCCESS":
-                st.success(sys_msg)
-            else:
-                st.error(sys_msg)
 
 
 #Mostrar menú dado el objeto obtenido de la consulta.
@@ -264,6 +340,7 @@ if st.session_state.usuario is not None:
         #Reiniciamos todos los objetos de la sesión.
         st.session_state.usuario = None
         st.session_state.jefe = None
+        st.session_state.obj = None
         st.rerun() #Fuerza la recarga para limpiar la pantalla.
 else:
     st.info("Ingresa a LOGIN para registrarte")

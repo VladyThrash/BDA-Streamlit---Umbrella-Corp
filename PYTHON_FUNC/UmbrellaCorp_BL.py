@@ -15,6 +15,9 @@ import pandas as pd
 import graphviz
 from UmbrellaCorp_DBM import DBM
 from UmbrellaCorp_Containers import Personal
+from UmbrellaCorp_Containers import EquipoContencion
+from UmbrellaCorp_Containers import ZonaBrote
+from UmbrellaCorp_Containers import BOW
 
 
 #Creamos la clase BL (BUSINESS LOGIC), que recibe un objeto DBM (DATA BASE MANAGER) para obtener y procesar los datos en función a la lógica
@@ -207,3 +210,83 @@ class BL:
 
         #El DBM ejecuta la consulta.
         return self.db.executeModifyFromPool(query= query, autocommit= True)
+
+
+    #Obtener un registro de la tabla Equipo_Contencion dado su ID.
+    def obtenerRegistroEquipoContencion(self, codigo_equipo:str):
+        #Creamos el query.
+        query = f"SELECT codigo_equipo, nombre_equipo, armamento.nombre_armamento FROM equipo_contencion JOIN armamento on equipo_contencion.armamento_id = armamento.id_armamento WHERE codigo_equipo like '{codigo_equipo}';"
+        
+        #El DBM ejecuta la consulta.
+        res = self.db.executeSelectFromPool(query)
+
+        #Validamos el resultado.
+        if res is None or res == []:
+            return None
+
+        return EquipoContencion(res[0][0], res[0][1], res[0][2])
+
+
+    #Obtener un registro de la tabla Zona_Brote dado su ID.
+    def obtenerRegistroZonaBrote(self, id_geografico:str):
+        #Creamos el query.
+        query = f"SELECT id_geografico, nombre_zona, estado_cuarentena.nombre_estado FROM zona_brote JOIN estado_cuarentena on zona_brote.estado_id = estado_cuarentena.id_estado WHERE id_geografico = {id_geografico};"
+
+        #El DBM ejecuta la consulta.
+        res = self.db.executeSelectFromPool(query)
+
+        #Validamos el resultado
+        if res is None or res == []:
+            return None
+
+        return ZonaBrote(res[0][0], res[0][1], res[0][2])
+
+
+    #Obtener un registro de la tabla BOW dado su ID.
+    def obtenerRegistroBOW(self, codigo_lote: str):
+        #Creamos el query usando LEFT JOINs para obtener los datos sin importar el tipo, 
+        #y un CASE para definir el campo 'tipo' dinámicamente.
+        query = f"""
+            SELECT 
+                b.codigo_lote, 
+                b.nombre_clave, 
+                b.fecha_mutacion, 
+                b.laboratorio_codigo, 
+                c.nombre_cepa,
+                CASE 
+                    WHEN h.lote_codigo IS NOT NULL THEN 'Humanoide'
+                    WHEN z.lote_codigo IS NOT NULL THEN 'Zoologico'
+                    ELSE 'Desconocido'
+                END AS tipo,
+                z.tasa_agresividad, 
+                e.nombre_especie, 
+                h.valor_iq, 
+                h.resistencia_daño
+            FROM BOW b
+            LEFT JOIN Cepa_Viral c ON b.cepa_id = c.id_cepa
+            LEFT JOIN Humanoides h ON b.codigo_lote = h.lote_codigo
+            LEFT JOIN Zoologicas z ON b.codigo_lote = z.lote_codigo
+            LEFT JOIN Especie_Animal e ON z.especie_id = e.id_especie
+            WHERE b.codigo_lote = '{codigo_lote}';
+        """
+
+        #El DBM ejecuta la consulta.
+        res = self.db.executeSelectFromPool(query)
+
+        #Validamos el resultado
+        if res is None or res == []:
+            return None
+
+        #Instanciamos el objeto BOW. 
+        return BOW(
+            res[0][0],  # codigo_lote
+            res[0][1],  # nombre_clave
+            res[0][2],  # fecha_mutacion
+            res[0][3],  # laboratorio_codigo
+            res[0][4],  # nombre_cepa
+            res[0][5],  # tipo
+            res[0][6],  # tasa_agresividad
+            res[0][7],  # nombre_especie
+            res[0][8],  # valor_iq
+            res[0][9]   # resistencia_daño
+        )
