@@ -1,3 +1,3 @@
 # .gitignore
-.streamlit/secrets.toml
-__pycache__/
+.toml
+__pycache__/PYTHON_FUNC/.streamlit/secrets.toml
