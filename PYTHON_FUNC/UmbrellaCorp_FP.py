@@ -315,6 +315,45 @@ def registro_despliegue():
                     st.error(f"No se reconoce el objeto: {type(st.session_state.obj)}")
             
 
+#Mostrar metricas: BOW's activas, Zonas de cuarentena Críticas, Número de especimenes desplegados.
+def mostrar_metricas():
+    #Metricas especificas para jefes.
+    if st.session_state.usuario.nivel_autorizacion >= 7:
+        pass
+
+    #Metricas genericas para usuarios normales.
+    else:
+        metrics = logic.obtenerMetricasGenericas()
+        with st.container(border=True):
+            st.subheader("Resumen de Despliegues") #(num_especimenes_totales, num_zonas_criticas >= 4, num_equipos_desplegados)
+
+            #Creamos 3 columnas para alinear las metricas.
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric(
+                    label= "Cantidad de especímenes en campo", 
+                    value= metrics[0],
+                    delta= "aumento",
+                    delta_color="inverse"
+                )
+
+            with col2:
+                st.metric(
+                    label= "Número de regiones críticas (cuarentena nivel 4 o 5)", 
+                    value= metrics[1], 
+                    delta= "aumento",
+                    delta_color="inverse"
+                )
+
+            with col3:
+                st.metric(
+                    label="Cantidad equipos desplegados", 
+                    value= metrics[2], 
+                    delta= "aumento", 
+                    delta_color="inverse"
+                )
+
 
 #Mostrar menú dado el objeto obtenido de la consulta.
 if st.session_state.usuario is not None:
@@ -326,12 +365,13 @@ if st.session_state.usuario is not None:
         # - st.form para generar un nuevo despliegue con SP.
         registro_despliegue()
 
-        # - Metricas de cada BOW.
         # - Gráficos interactivos de agregación temporal (especímenes liberados por mes semana y por tipo de mutágeno).
         # - Mapa o diagrama de zonas geográficas afectadas.
         # - Acceso total a las tablas.
-        pass
     
+    #Metricas de cada BOW.
+    mostrar_metricas()
+
     #Aquí las funcionalidades para todos los tipos de usuarios (selector de jefe y grafo de jerarquías).
     selector_jefe()
 

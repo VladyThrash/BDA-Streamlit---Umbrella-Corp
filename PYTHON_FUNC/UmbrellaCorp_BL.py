@@ -290,3 +290,22 @@ class BL:
             res[0][8],  # valor_iq
             res[0][9]   # resistencia_daño
         )
+
+
+    #Obtener metricas genericas de la tabla Despliegues.
+    def obtenerMetricasGenericas(self):
+        #Creamos la consulta (num_especimenes_totales, num_zonas_criticas >= 4, num_equipos_desplegados).
+        query = """
+                SELECT sum(num_especimenes) as sum_esp, count(DISTINCT geografico_id) as count_geo, count(equipo_codigo) as count_team from Despliegues 
+                JOIN zona_brote on despliegues.geografico_id = zona_brote.id_geografico
+                WHERE zona_brote.estado_id >= 4;
+        """
+
+        #El DBM ejecuta la consulta.
+        res = self.db.executeSelectFromPool(query)
+
+        #Validamos el resultado.
+        if res is None or res == []:
+            return None
+
+        return res[0] #Retornamos la tupla (num_especimenes_totales, num_zonas_criticas >= 4, num_equipos_desplegados).
