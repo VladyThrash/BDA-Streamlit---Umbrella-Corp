@@ -10,7 +10,6 @@
 
 
 #Importamos las librerías y clases necesarias para este módulo.
-import numpy as np
 import pandas as pd
 import graphviz
 from UmbrellaCorp_DBM import DBM
@@ -309,3 +308,74 @@ class BL:
             return None
 
         return res[0] #Retornamos la tupla (num_especimenes_totales, num_zonas_criticas >= 4, num_equipos_desplegados).
+
+
+    #Obtener número de B.O.W's desplegados por especie.
+    def obtenerMetricasBOW(self):
+        #Creamos el query.
+        query = """
+            SELECT 
+                b.nombre_clave AS nombre_bow,
+                SUM(d.num_especimenes) AS total_desplegados
+            FROM Despliegues d
+            JOIN BOW b ON d.lote_codigo = b.codigo_lote
+            GROUP BY b.nombre_clave
+            ORDER BY total_desplegados DESC;
+        """
+        res = self.db.executeSelectFromPool(query)
+        columnas = ['Especie', 'Total_Desplegados']
+        
+        if not res:
+            return pd.DataFrame(columns=columnas)
+            
+        return pd.DataFrame(res, columns=columnas)
+
+
+    #Obtener tipo de cuarentena por zona y equipo de contención encargado.
+    def obtenerMetricasZonasDespliegue(self):
+        #Creamos el query.
+        #Usamos DISTINCT porque un mismo equipo podría tener múltiples despliegues en la misma zona, y solo queremos el mapeo único.
+        query = """
+            SELECT DISTINCT
+                zb.nombre_zona,
+                ec.nombre_estado AS tipo_cuarentena,
+                eq.nombre_equipo AS equipo_encargado,
+                zb.latitud AS lat,
+                zb.longitud AS lon
+            FROM Despliegues d
+            JOIN Zona_Brote zb ON d.geografico_id = zb.id_geografico
+            JOIN Estado_Cuarentena ec ON zb.estado_id = ec.id_estado
+            JOIN Equipo_Contencion eq ON d.equipo_codigo = eq.codigo_equipo
+            WHERE zb.latitud IS NOT NULL AND zb.longitud IS NOT NULL
+            ORDER BY zb.nombre_zona;
+        """
+        res = self.db.executeSelectFromPool(query)
+        columnas = ['Zona', 'Tipo_Cuarentena', 'Equipo_Contencion', 'lat', 'lon']
+        
+        if not res:
+            return pd.DataFrame(columns=columnas)
+            
+        return pd.DataFrame(res, columns=columnas)
+
+
+    #Obtenemos los tipos de espécimen por zona
+    def obtenerMetricasDispersion(self):
+        #Creamos el query.
+        query = """
+            SELECT 
+                zb.nombre_zona,
+                b.nombre_clave AS nombre_bow,
+                SUM(d.num_especimenes) AS cantidad
+            FROM Despliegues d
+            JOIN Zona_Brote zb ON d.geografico_id = zb.id_geografico
+            JOIN BOW b ON d.lote_codigo = b.codigo_lote
+            GROUP BY zb.nombre_zona, b.nombre_clave
+            ORDER BY zb.nombre_zona, cantidad DESC;
+        """
+        res = self.db.executeSelectFromPool(query)
+        columnas = ['Zona', 'Tipo_Especimen', 'Cantidad']
+        
+        if not res:
+            return pd.DataFrame(columns=columnas)
+            
+        return pd.DataFrame(res, columns=columnas)

@@ -79,6 +79,36 @@ INSERT INTO Zona_Brote (id_geografico, nombre_zona, estado_id) VALUES
 (113, 'Pueblo de Valdelobos, España', 3),-- RE4: Contención militar externa tras la caída de Los Iluminados
 (114, 'Villa Europea, Rumania', 2);      -- RE8: Contención interna por las fuerzas de la BSAA
 
+-- Añadir UPDATES para poder rigistrar latitud y longitud (Ubicación geografica).
+-- 101: Montañas Arklay (Aproximación Medio Oeste EE.UU.)
+UPDATE Zona_Brote SET latitud = 37.9150, longitud = -91.8200 WHERE id_geografico = 101;
+-- 102: Raccoon City (Cerca de Arklay)
+UPDATE Zona_Brote SET latitud = 37.8020, longitud = -91.9540 WHERE id_geografico = 102;
+-- 103: Isla Sheena (Aproximación Europa del Norte)
+UPDATE Zona_Brote SET latitud = 54.1230, longitud = 5.0120 WHERE id_geografico = 103;
+-- 104: Isla Rockfort (Océano Antártico / Atlántico Sur)
+UPDATE Zona_Brote SET latitud = -54.2810, longitud = -36.5050 WHERE id_geografico = 104;
+-- 105: Zona Autónoma de Kijuju (África Occidental)
+UPDATE Zona_Brote SET latitud = 12.3400, longitud = -3.2100 WHERE id_geografico = 105;
+-- 106: Ciudad de Tall Oaks (Costa Este/Medio Oeste EE.UU.)
+UPDATE Zona_Brote SET latitud = 40.1200, longitud = -77.0300 WHERE id_geografico = 106;
+-- 107: Dulvey, Luisiana (Pantanos del sur de EE.UU.)
+UPDATE Zona_Brote SET latitud = 29.9510, longitud = -90.8710 WHERE id_geografico = 107;
+-- 108: Ciudad Flotante Terragrigia (Mar Mediterráneo, cerca de Italia)
+UPDATE Zona_Brote SET latitud = 42.1050, longitud = 12.2130 WHERE id_geografico = 108;
+-- 109: República de Edonia (Europa del Este, Balcanes)
+UPDATE Zona_Brote SET latitud = 44.2100, longitud = 21.0500 WHERE id_geografico = 109;
+-- 110: Lanshiang, China (Inspirado en la costa este asiática)
+UPDATE Zona_Brote SET latitud = 22.3193, longitud = 114.1694 WHERE id_geografico = 110;
+-- 111: Harvardville (EE.UU.)
+UPDATE Zona_Brote SET latitud = 39.0520, longitud = -94.3410 WHERE id_geografico = 111;
+-- 112: Isla de Zabytij (Mar Báltico/Rusia)
+UPDATE Zona_Brote SET latitud = 60.1500, longitud = 28.1200 WHERE id_geografico = 112;
+-- 113: Pueblo de Valdelobos, España (Norte de España)
+UPDATE Zona_Brote SET latitud = 43.1500, longitud = -5.3200 WHERE id_geografico = 113;
+-- 114: Villa Europea, Rumania (Transilvania)
+UPDATE Zona_Brote SET latitud = 46.1200, longitud = 24.3500 WHERE id_geografico = 114;
+
 
 -- Para llenar la tabla Equipo_Contención.
 -- Primero llenamos el catalogo de Armamento.

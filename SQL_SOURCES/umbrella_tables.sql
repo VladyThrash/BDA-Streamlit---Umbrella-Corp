@@ -37,6 +37,10 @@ create table Zona_Brote ( -- Esta entidad implementa el catalogo de estado de cu
     FOREIGN KEY(estado_id) REFERENCES Estado_Cuarentena(id_estado)
 );
 
+ALTER TABLE Zona_Brote  -- Añadir dos nuevas columnas para poder ubicar geograficamente.
+ADD COLUMN latitud DOUBLE PRECISION,
+ADD COLUMN longitud DOUBLE PRECISION;
+
 
 -- Tabla Equipo de Contención con catalogo a al tipo de Armamento utilizado.
 create table Armamento ( -- Catalogo con los tipos de armamento que puede utilizar un equipo.

@@ -11,6 +11,7 @@
 
 #Importamos las librerías y clases necesarias para este módulo.
 import streamlit as st
+import numpy as np
 from UmbrellaCorp_DBM import DBM
 from UmbrellaCorp_BL import BL
 from UmbrellaCorp_Containers import Personal
@@ -58,6 +59,7 @@ if "usuario" not in st.session_state:
     st.session_state.usuario = None #El objeto del ultimo usuario consultado.
     st.session_state.jefe = None #Objeto del ultimo jefe consultado.
     st.session_state.obj = None #Objeto para saber info antes de un despliegue.
+    st.session_state.categoria = None #Información de la metrica a imprimir.
 
 # Barra lateral
 with st.sidebar:
@@ -315,11 +317,96 @@ def registro_despliegue():
                     st.error(f"No se reconoce el objeto: {type(st.session_state.obj)}")
             
 
+#Renderizar metricas y gráficos.
+def metricas_bow():
+    st.write("### Registro de B.O.W's Desplegados")
+    
+    #Imprimir el dataframe.
+    df = st.session_state.categoria
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+    #Imprimir un gráfico de barras.
+    st.write("### Volumen de Despliegue por Espécimen")
+    if not df.empty:
+        st.bar_chart(data=df, x='Especie', y='Total_Desplegados')
+    else:
+        st.info("No hay despliegues registrados para mostrar.")
+
+
+#Renderizar metricas y gráficos.
+def metricas_zona():
+    st.write("### Zonas de Riesgo y Contención")
+
+    #Imprimir el dataframe.
+    df = st.session_state.categoria
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+    #Generar un mapa (hardcode).
+    st.write("### Mapa de Zonas de Brote")
+    if not df.empty:
+        #Streamlit detecta 'lat' y 'lon' y renderiza los puntos automáticamente.
+        st.map(df)
+    else:
+        st.info("No hay zonas de brote activas para mapear.")
+
+
+#Renderizar metricas y gráficos.
+def metricas_dispersion():
+    st.write("### Presencia de Especímenes por Zona")
+
+    #Imprimir el dataframe.
+    df = st.session_state.categoria
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+    #Imprimir un gráfico de dispersión (en realidad es de barras).
+    st.write("### Distribución de Amenazas")
+    if not df.empty:
+        st.bar_chart(data=df, x='Zona', y='Cantidad', color='Tipo_Especimen')
+    else:
+        st.info("No hay dispersión registrada para mostrar.")
+
+
 #Mostrar metricas: BOW's activas, Zonas de cuarentena Críticas, Número de especimenes desplegados.
 def mostrar_metricas():
     #Metricas especificas para jefes.
     if st.session_state.usuario.nivel_autorizacion >= 7:
-        pass
+        with st.container(border=True):
+            st.subheader("Resumen de Despliegues por categoría")
+
+            #Definimos el forms de persistencia.
+            with st.form(key="form_despliegues"):
+                
+                #Selector para las 3 categorías.
+                #1.- Numero de B.O.W's por especie.
+                #2.- Tipo de cuarentena por zona y equipo de contención encargado.
+                #3.- Tipos de especimen por zona.
+                categoria_seleccionada = st.selectbox(
+                    label="Categoría",
+                    options=["B.O.W's desplegados", "Riesgo por región y equipos de contención", "Dispersión de especímenes"]
+                )
+                
+                #Botón para ejecutar
+                btn_ejecutar = st.form_submit_button(label="Calcular Métricas")
+
+            #Renderizar los resultados
+            if btn_ejecutar:
+                if categoria_seleccionada == "B.O.W's desplegados":
+                    st.session_state.categoria = logic.obtenerMetricasBOW() #Número de BOW's por especie.
+                if categoria_seleccionada == "Riesgo por región y equipos de contención":
+                    st.session_state.categoria = logic.obtenerMetricasZonasDespliegue() #Tipo de cuarentena por zona, y equipo encargado.
+                if categoria_seleccionada == "Dispersión de especímenes":
+                    st.session_state.categoria = logic.obtenerMetricasDispersion() #Tipos de especimenes por zona.
+                    
+                st.divider()
+                
+                if st.session_state.categoria is not None:
+                    if categoria_seleccionada == "B.O.W's desplegados":
+                        metricas_bow() #Número de BOW's por especie y gráficos.
+                    if categoria_seleccionada == "Riesgo por región y equipos de contención":
+                        metricas_zona() #Tipo de cuarentena por zona, equipo encargado y mapa.
+                    if categoria_seleccionada == "Dispersión de especímenes":
+                        metricas_dispersion() #Tipos de especimenes por zona y gráficos.
+                
 
     #Metricas genericas para usuarios normales.
     else:
@@ -381,6 +468,7 @@ if st.session_state.usuario is not None:
         st.session_state.usuario = None
         st.session_state.jefe = None
         st.session_state.obj = None
+        st.session_state.categoria = None
         st.rerun() #Fuerza la recarga para limpiar la pantalla.
 else:
     st.info("Ingresa a LOGIN para registrarte")
