@@ -141,6 +141,15 @@ def ficha_empleado():
 
         col_metrica2.metric(label="Categoría", value= category)
 
+        if st.session_state.usuario.nivel_autorizacion >= 7:
+            #Mostrar los ultimos despliegues autorizados del jefe.
+            st.divider()
+            st.write("#### Despliegues autorizados")
+            
+            #Imprimir el dataframe.
+            df = logic.obtenerDesplieguesUsuario(st.session_state.usuario.id_empleado)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+
 
 #Mostrar un selector para buscar información sobre jefes de división científica.
 def selector_jefe():
@@ -451,10 +460,6 @@ if st.session_state.usuario is not None:
     if st.session_state.usuario.nivel_autorizacion >= 7:
         # - st.form para generar un nuevo despliegue con SP.
         registro_despliegue()
-
-        # - Gráficos interactivos de agregación temporal (especímenes liberados por mes semana y por tipo de mutágeno).
-        # - Mapa o diagrama de zonas geográficas afectadas.
-        # - Acceso total a las tablas.
     
     #Metricas de cada BOW.
     mostrar_metricas()

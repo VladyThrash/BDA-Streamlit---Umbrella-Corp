@@ -379,3 +379,36 @@ class BL:
             return pd.DataFrame(columns=columnas)
             
         return pd.DataFrame(res, columns=columnas)
+
+
+    #Obtener los despliegues asociados a un empleado, mostrando nombres en lugar de IDs.
+    def obtenerDesplieguesUsuario(self, id_empleado: int):
+        #Creamos el query.
+        query = f"""
+            SELECT 
+                Despliegues.clave_despliegue,
+                Despliegues.fecha_despliegue,
+                Equipo_Contencion.nombre_equipo,
+                Zona_Brote.nombre_zona,
+                BOW.nombre_clave AS nombre_bow,
+                Despliegues.num_especimenes
+            FROM Despliegues 
+            LEFT JOIN Equipo_Contencion ON Despliegues.equipo_codigo = Equipo_Contencion.codigo_equipo
+            LEFT JOIN Zona_Brote ON Despliegues.geografico_id = Zona_Brote.id_geografico
+            LEFT JOIN BOW ON Despliegues.lote_codigo = BOW.codigo_lote
+            WHERE Despliegues.empleado_id = {id_empleado}
+            ORDER BY Despliegues.fecha_despliegue DESC;
+        """
+
+        #El DBM ejecuta la consulta.
+        res = self.db.executeSelectFromPool(query)
+
+        #Definimos las columnas exactas que trae el SELECT.
+        columnas = ['Clave', 'Fecha', 'Equipo de Contención', 'Zona de Brote', 'B.O.W.', 'Especímenes']
+
+        #Validamos el resultado
+        if not res:
+            #Regresamos un DF vacío con los encabezados
+            return pd.DataFrame(columns=columnas)
+
+        return pd.DataFrame(res, columns=columnas)
